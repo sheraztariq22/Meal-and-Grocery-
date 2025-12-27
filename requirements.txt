@@ -7,17 +7,16 @@ python-dotenv>=1.0.0
 crewai==0.141.0
 langchain==0.3.20
 langchain-community==0.3.19
-langchain-openai==0.3.25
 
-# Google Gemini integration
+# Google Gemini integration (new package)
+# Note: google-genai is the new recommended package
+# Fallback to google-generativeai for compatibility
+google-genai>=0.1.0
 google-generativeai>=0.3.0
 
-# CrewAI tools and utilities
-crewai-tools==0.51.1
+# Web search and utilities
 duckduckgo-search==7.5.2
 
 # Configuration and utilities
 ruamel.yaml>=0.17.0
 pyyaml>=6.0
-
-Founding AI Engineer (multimodal ingestion and Agents)

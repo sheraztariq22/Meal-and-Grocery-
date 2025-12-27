@@ -31,11 +31,16 @@ except ImportError:
 
 # Optional imports (soft)
 try:
-    import google.generativeai as genai
+    import google.genai as genai
     HAS_GENAI = True
-except Exception:
-    genai = None
-    HAS_GENAI = False
+except ImportError:
+    try:
+        # Fallback to deprecated package if new one not available
+        import google.generativeai as genai
+        HAS_GENAI = True
+    except Exception:
+        genai = None
+        HAS_GENAI = False
 
 try:
     import crewai
@@ -92,14 +97,19 @@ class GroceryShoppingPlan(BaseModel):
 
 # -------------------- Gemini (Google) wrapper --------------------
 class GeminiWrapper:
-    def __init__(self, api_key: Optional[str] = None, model: str = "gemini-tiny"):
+    def __init__(self, api_key: Optional[str] = None, model: str = "gemini-2.5-flash"):
         self.api_key = api_key or os.environ.get("GEMINI_API_KEY")
         self.model = model
         if not self.api_key:
             raise ValueError("GEMINI_API_KEY not set in environment and not provided")
         if not HAS_GENAI:
-            raise RuntimeError("google-generativeai library is not installed. Install with 'pip install google-generativeai'")
-        genai.configure(api_key=self.api_key)
+            raise RuntimeError("google.genai library is not installed. Install with 'pip install google-genai'")
+        # Configure API key based on which package version is available
+        try:
+            genai.configure(api_key=self.api_key)
+        except AttributeError:
+            # New google.genai package uses client initialization
+            pass
 
     def call(self, prompt: str, **kwargs) -> str:
         """Call the Gemini model and return text response.
@@ -107,15 +117,38 @@ class GeminiWrapper:
         This is a minimal wrapper. For advanced usage (structured output, multimodal), adapt accordingly.
         """
         if not HAS_GENAI:
-            raise RuntimeError("google-generativeai not available")
-        resp = genai.generate(model=self.model, prompt=prompt, **kwargs)
-        # The response object shape may vary; defensively extract text
-        if hasattr(resp, "text"):
-            return resp.text
+            raise RuntimeError("google.genai not available")
+        
         try:
-            return str(resp)
-        except Exception:
-            return json.dumps(resp, default=str)
+            # Try new google.genai API (1.0+)
+            client = genai.Client(api_key=self.api_key)
+            response = client.models.generate_content(
+                model=f"models/{self.model}",
+                contents=prompt,
+                **kwargs
+            )
+            # Extract text from response
+            if hasattr(response, "text"):
+                return response.text
+            return str(response)
+        except (AttributeError, TypeError):
+            # Fallback to deprecated google.generativeai API
+            try:
+                resp = genai.generate(model=self.model, prompt=prompt, **kwargs)
+                # The response object shape may vary; defensively extract text
+                if hasattr(resp, "text"):
+                    return resp.text
+                return str(resp)
+            except Exception as e:
+                # Last resort: use GenerativeModel (newer genai API)
+                try:
+                    model_obj = genai.GenerativeModel(self.model)
+                    response = model_obj.generate_content(prompt, **kwargs)
+                    if hasattr(response, "text"):
+                        return response.text
+                    return str(response)
+                except Exception:
+                    raise RuntimeError(f"Failed to call Gemini API: {e}")
 
 
 # -------------------- CrewAI helpers / local fallbacks --------------------
@@ -131,7 +164,7 @@ class LocalAgent:
         return self.llm_call(enriched)
 
 
-def build_llm_callable_from_gemini(api_key: Optional[str] = None, model: str = "gemini-tiny") -> Callable[[str], str]:
+def build_llm_callable_from_gemini(api_key: Optional[str] = None, model: str = "gemini-2.5-flash") -> Callable[[str], str]:
     """Return a simple callable that sends text prompts to Gemini and returns text.
 
     Raises helpful errors if dependencies are missing.
@@ -143,7 +176,7 @@ def build_llm_callable_from_gemini(api_key: Optional[str] = None, model: str = "
         return stub
 
     if not HAS_GENAI:
-        raise RuntimeError("google-generativeai not installed; run: pip install google-generativeai")
+        raise RuntimeError("google-genai not installed; run: pip install google-genai")
 
     gw = GeminiWrapper(api_key=api_key, model=model)
 
