@@ -8,7 +8,7 @@ This module provides:
 
 Usage:
 - Set `GEMINI_API_KEY` in your environment for real LLM calls.
-- Install optional dependencies: `pip install crewai langchain google-generativeai pydantic ruamel.yaml`
+- Install optional dependencies: `pip install crewai langchain google-generativeai pydantic ruamel.yaml python-dotenv`
 
 This file is intentionally defensive: it will run without optional deps so you can prototype locally.
 """
@@ -16,7 +16,18 @@ from __future__ import annotations
 from typing import List, Dict, Optional, Any, Callable
 import os
 import json
+from pathlib import Path
 from pydantic import BaseModel, Field
+
+# Load environment variables from .env file (if present)
+try:
+    from dotenv import load_dotenv
+    # Load .env from current directory
+    env_file = Path(".env")
+    if env_file.exists():
+        load_dotenv(env_file)
+except ImportError:
+    pass  # python-dotenv not installed, fall back to os.environ
 
 # Optional imports (soft)
 try:
@@ -37,6 +48,14 @@ except Exception:
     Process = None
     LLM = None
     HAS_CREWAI = False
+
+# Try to import LeftoversCrew from leftover.py (YAML-based)
+try:
+    from leftover import LeftoversCrew
+    HAS_LEFTOVER_CREW = True
+except Exception:
+    LeftoversCrew = None
+    HAS_LEFTOVER_CREW = False
 
 try:
     import yaml
@@ -147,16 +166,40 @@ def build_agent_stubs(llm_call: Callable[[str], str]) -> Dict[str, LocalAgent]:
 
 # -------------------- Coordinator --------------------
 class Coordinator:
-    """Coordinate agents and tasks using CrewAI if available, otherwise local sequential execution."""
-    def __init__(self, llm_call: Callable[[str], str], config_path: Optional[str] = None):
+    """Coordinate agents and tasks using CrewAI if available, otherwise local sequential execution.
+    
+    Integrates:
+    - Meal Planner Agent (web search for recipes)
+    - Shopping Organizer Agent (organize by store section)
+    - Budget Advisor Agent (cost analysis)
+    - Summary Agent (compile report)
+    - LeftoversCrew (from leftover.py + YAML config) if available
+    """
+    def __init__(self, llm_call: Callable[[str], str], config_path: Optional[str] = None, use_leftovers_crew: bool = True):
         self.llm_call = llm_call
         self.config_path = config_path
+        self.use_leftovers_crew = use_leftovers_crew
         self.agents = {}
+        self.leftovers_crew = None
+        
         if HAS_CREWAI:
             # If crewai is installed, prefer using its Agent/Task abstractions
             self._build_crewai_agents()
         else:
             self.agents = build_agent_stubs(llm_call)
+        
+        # Optionally load LeftoversCrew (YAML-based)
+        if use_leftovers_crew and HAS_LEFTOVER_CREW and HAS_CREWAI:
+            self._load_leftovers_crew()
+
+    def _load_leftovers_crew(self):
+        try:
+            # Build an LLM for CrewAI if possible
+            crew_llm = LLM(model="gemini-tiny") if LLM is not None else None
+            self.leftovers_crew = LeftoversCrew(llm=crew_llm)
+        except Exception as e:
+            print(f"Warning: Could not load LeftoversCrew: {e}")
+            self.leftovers_crew = None
 
     def _build_crewai_agents(self):
         # basic example using CrewAI; users can extend with YAML configs
@@ -209,7 +252,25 @@ class Coordinator:
         budget_prompt = f"Given shopping list: {truncate_for_prompt(results['shopping_organizer'])}\nEnsure total cost fits {inputs.get('budget')} and suggest savings."
         results['budget_advisor'] = (self._crew_task_fallback('budget_advisor', budget_prompt, context=results))
 
-        # Stage 4: Summary
+        # Stage 4: Leftovers (if available)
+        if self.leftovers_crew:
+            try:
+                leftovers_manager = self.leftovers_crew.leftover_manager()
+                leftovers_task = self.leftovers_crew.leftover_task()
+                leftovers_crew_obj = Crew(agents=[leftovers_manager], tasks=[leftovers_task], process=Process.sequential)
+                leftovers_out = leftovers_crew_obj.kickoff(inputs={
+                    "meal_name": inputs.get('meal_name'),
+                    "dietary_restrictions": inputs.get('dietary_restrictions'),
+                    "budget": inputs.get('budget')
+                })
+                results['leftovers'] = leftovers_out
+            except Exception as e:
+                print(f"Warning: LeftoversCrew failed: {e}")
+                results['leftovers'] = "Leftover suggestions unavailable"
+        else:
+            results['leftovers'] = "Leftover analysis skipped (LeftoversCrew not available)"
+
+        # Stage 5: Summary
         summary_prompt = f"Compile a user-friendly guide containing meal plan, shopping list, budget tips, and leftovers suggestions. Context: {truncate_for_prompt(results)}"
         results['summary'] = (self._crew_task_fallback('summary_agent', summary_prompt, context=results))
 
