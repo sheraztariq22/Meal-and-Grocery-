@@ -1,6 +1,6 @@
 # tasks.yaml - CrewAI Task Definitions
 
 leftover_task:
-  description: "Analyze the shopping list for '{meal_name}' serving {servings} people and identify ingredients that might result in leftovers or partial usage. Suggest 2-3 additional quick meals or recipes that can use these leftover ingredients within the {budget} budget. Consider dietary restrictions: {dietary_restrictions}."
+  description: "Analyze the meal '{meal_name}' serving {servings} people with a budget of {budget}. Identify ingredients that might result in leftovers or partial usage. Suggest 2-3 additional quick meals or recipes that can use these leftover ingredients within the budget. Consider dietary restrictions: {dietary_restrictions}."
   expected_output: "A detailed list of 2-3 bonus recipes and creative uses for leftover ingredients with estimated costs and preparation times, helping to maximize the grocery budget and minimize waste."
   agent: leftover_manager

@@ -293,8 +293,9 @@ class Coordinator:
                 leftovers_crew_obj = Crew(agents=[leftovers_manager], tasks=[leftovers_task], process=Process.sequential)
                 leftovers_out = leftovers_crew_obj.kickoff(inputs={
                     "meal_name": inputs.get('meal_name'),
-                    "dietary_restrictions": inputs.get('dietary_restrictions'),
-                    "budget": inputs.get('budget')
+                    "servings": inputs.get('servings'),
+                    "budget": inputs.get('budget'),
+                    "dietary_restrictions": inputs.get('restrictions', inputs.get('dietary_restrictions', 'none'))
                 })
                 results['leftovers'] = leftovers_out
             except Exception as e:
