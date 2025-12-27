@@ -1,18 +1,59 @@
-Meal & Grocery Planner
+# 🍽️ Meal & Grocery Planner with CrewAI
 
-A complete multi-agent meal planning system using CrewAI, LangChain, and Google Gemini.
+[![Python 3.11+](https://img.shields.io/badge/Python-3.11%2B-blue)](https://www.python.org/downloads/)
+[![CrewAI 0.141.0](https://img.shields.io/badge/CrewAI-0.141.0-green)](https://crewai.io)
+[![LangChain 0.3.20](https://img.shields.io/badge/LangChain-0.3.20-orange)](https://langchain.com)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
-## Features
+A **production-ready intelligent meal planning and grocery shopping assistant** powered by **CrewAI**, **LangChain**, and **Google Gemini**. This system uses a multi-agent architecture to coordinate specialized AI agents for meal research, shopping organization, budget analysis, and waste reduction.
 
-- **Multi-Agent Coordination**: Meal Planner, Shopping Organizer, Budget Advisor, Leftover Manager, Report Compiler
-- **Web Recipe Search**: Real-time recipe research via web search
-- **Organized Shopping Lists**: Grouped by store sections for efficient shopping
-- **Budget Analysis**: Cost tracking and money-saving tips
-- **Leftover Management**: Minimize food waste with creative recipes
-- **Google Gemini Integration**: Powered by Google's latest LLM
-- **Fallback Mode**: Works without API keys using local agent stubs
+> **🎯 Perfect for**: Home cooks, meal planners, budget-conscious shoppers, and those who want to minimize food waste.
 
-## Quick Start
+---
+
+## 📋 Table of Contents
+
+- [Features](#-features)
+- [Quick Start](#-quick-start)
+- [Architecture](#-architecture)
+- [Directory Structure](#-directory-structure)
+- [Installation](#-installation)
+- [Configuration](#-configuration)
+- [Usage](#-usage)
+- [Troubleshooting](#-troubleshooting)
+- [API Keys](#-api-keys)
+- [Project Structure](#-project-structure)
+- [Contributing](#-contributing)
+
+---
+
+## ✨ Features
+
+### 🤖 Multi-Agent System
+- **Meal Planner Agent**: Researches recipes and creates meal plans based on preferences
+- **Shopping Organizer Agent**: Structures groceries by store sections for efficient shopping
+- **Budget Advisor Agent**: Analyzes costs and provides money-saving recommendations
+- **Leftovers Manager Agent**: Suggests creative recipes to use leftover ingredients
+- **Summary Agent**: Compiles comprehensive shopping guides
+
+### 🎯 Core Capabilities
+- ✅ **Intelligent Meal Planning** - AI-powered recipe research and meal design
+- ✅ **Smart Grocery Organization** - Auto-grouped shopping lists by store section
+- ✅ **Budget Optimization** - Real-time cost analysis and savings suggestions
+- ✅ **Waste Reduction** - Creative leftover meal suggestions
+- ✅ **Dietary Restrictions** - Supports vegetarian, vegan, gluten-free, dairy-free, nut allergies
+- ✅ **Skill-Level Adaptation** - Tailored recipes for beginner to advanced cooks
+- ✅ **Web Search Integration** - DuckDuckGo search for up-to-date recipes
+- ✅ **Export Options** - Download plans as JSON or Markdown
+
+### 🖥️ Interfaces
+- **Streamlit Web UI** - Modern, interactive interface for meal planning (Recommended)
+- **Python CLI** - Command-line interface for batch processing
+- **Python API** - Programmatic integration into larger applications
+
+---
+
+## 🚀 Quick Start
 
 ### 1. Install Dependencies
 
@@ -21,6 +62,8 @@ pip install -r requirements.txt
 ```
 
 ### 2. Set Up Google Gemini API Key
+
+**Get API Key:** https://ai.google.dev/
 
 **Option A: Using .env file (Recommended)**
 
@@ -32,181 +75,680 @@ cp .env.example .env
 # GEMINI_API_KEY=your_actual_key_here
 ```
 
-Get a free API key: https://ai.google.dev/
-
 **Option B: Using Environment Variable**
 
 ```bash
 export GEMINI_API_KEY="your_key_here"    # macOS / Linux
-setx GEMINI_API_KEY "your_key_here"      # Windows (PowerShell restart required)
+setx GEMINI_API_KEY "your_key_here"      # Windows
 ```
 
-### 3. Run the System
+### 3. Run the Application
 
+**Streamlit Web Interface (Recommended):**
+```bash
+streamlit run streamlit_app.py
+# Opens at: http://localhost:8501
+```
+
+**Command-Line Interface:**
 ```bash
 python main.py
 ```
 
-This runs a complete workflow and outputs results to `workflow_results.json`.
+---
 
-## Configuration
-
-### .env File (Recommended)
-
-Copy `.env.example` to `.env` and configure:
+## 🏗️ Architecture
 
 ```
-GEMINI_API_KEY=your_gemini_api_key_here
-SERPER_API_KEY=your_serper_api_key_here  # Optional, for web search
+┌─────────────────────────────────────────────────────┐
+│         Streamlit Web Interface (UI)                │
+│  - Beautiful, interactive meal planning             │
+│  - Real-time results display                        │
+│  - Export to JSON/Markdown                          │
+└────────────────────┬────────────────────────────────┘
+                     │
+┌────────────────────┴────────────────────────────────┐
+│      Coordinator (Multi-Agent Orchestration)        │
+│  - Sequential workflow management                   │
+│  - Fallback error handling                          │
+│  - Result aggregation                               │
+├─────────────────────────────────────────────────────┤
+│  LLM Callable (Google Gemini or Local Stub)         │
+│  - Gemini API calls with retry logic                │
+│  - Graceful degradation when offline                │
+└────────────────────┬────────────────────────────────┘
+                     │
+     ┌───────────────┼───────────────┬──────────────┐
+     │               │               │              │
+  ┌──▼──┐       ┌───▼────┐    ┌────▼────┐   ┌────▼────┐
+  │Meal │       │Shopping│    │ Budget   │   │Leftovers│
+  │Plan │       │Organizer    │ Advisor  │   │ Manager │
+  │Agent│       │        │    │          │   │         │
+  └──┬──┘       └───┬────┘    └────┬────┘   └────┬────┘
+     │               │             │             │
+     └───────────────┼─────────────┼─────────────┘
+                     │
+                 ┌───▼──────┐
+                 │  Summary  │
+                 │  Agent    │
+                 └───┬───────┘
+                     │
+            ┌────────▼────────┐
+            │  JSON Output &  │
+            │  Markdown File  │
+            └─────────────────┘
+```
+
+### Agent Workflow (Sequential)
+
+1. **Meal Planner** 🍳
+   - Researches recipes matching meal name, servings, budget, restrictions
+   - Returns ingredients list, difficulty level, cooking instructions
+
+2. **Shopping Organizer** 🛒
+   - Structures ingredients by store sections (Produce, Dairy, Meat, etc.)
+   - Adds quantities and estimated prices
+
+3. **Budget Advisor** 💰
+   - Analyzes total cost vs. budget
+   - Suggests cheaper alternatives
+   - Provides money-saving tips
+
+4. **Leftovers Manager** ♻️
+   - Identifies partial-use ingredients
+   - Suggests 2-3 bonus recipes using leftovers
+   - Helps minimize food waste
+
+5. **Summary Agent** 📋
+   - Compiles all information into user-friendly guide
+   - Generates final shopping and meal plan
+
+---
+
+## 📁 Directory Structure
+
+```
+Meal and Grocery System-CrewAI/
+│
+├── 📄 README.md                          # Complete documentation (this file)
+├── 📄 requirements.txt                   # Python dependencies
+├── 📄 .env.example                       # Environment variables template
+├── 📄 .gitignore                         # Git ignore rules
+│
+├── 📄 main.py                            # CLI entry point (run: python main.py)
+├── 📄 streamlit_app.py                   # Web UI (run: streamlit run streamlit_app.py)
+├── 📄 crewai_multi_agent.py              # Core coordinator & agents
+├── 📄 leftover.py                        # LeftoversCrew YAML-based implementation
+├── 📄 meal_planner.py                    # [DEPRECATED] Legacy simple planner
+│
+├── 📄 meals.json                         # Sample meal data
+├── 📄 shopping_guide.md                  # Sample output document
+├── 📄 shopping_list.json                 # Sample shopping list
+│
+├── 📁 config/                            # Agent & Task YAML configuration
+│   ├── agents.yaml                       # Agent definitions (role, goal, backstory)
+│   └── tasks.yaml                        # Task definitions (description, output)
+│
+├── 📁 venv/                              # Python virtual environment (auto-created)
+│   ├── Scripts/                          # Windows executables (pip, python, etc.)
+│   ├── Lib/                              # Installed packages
+│   ├── bin/                              # Unix executables
+│   └── pyvenv.cfg                        # Environment config
+│
+└── 📁 __pycache__/                       # Python cache files (auto-generated)
+```
+
+### Key Files Overview
+
+| File | Purpose | Run Command |
+|------|---------|-------------|
+| `main.py` | CLI entry point - runs full workflow from command line | `python main.py` |
+| `streamlit_app.py` | Web UI built with Streamlit - interactive and beautiful | `streamlit run streamlit_app.py` |
+| `crewai_multi_agent.py` | Core module with Coordinator, agents, and LLM wrapper | Import in code |
+| `leftover.py` | YAML-based LeftoversCrew using @CrewBase decorator | Auto-loaded |
+| `config/agents.yaml` | Defines agent roles, goals, and behaviors | Referenced by LeftoversCrew |
+| `config/tasks.yaml` | Defines task descriptions and expected outputs | Referenced by LeftoversCrew |
+| `.env.example` | Template for environment variables (copy to `.env`) | Copy & configure |
+
+---
+
+## 💻 Installation
+
+### Prerequisites
+
+- **Python**: 3.11 or higher
+- **OS**: Windows, macOS, or Linux
+- **RAM**: 2GB minimum (4GB recommended)
+- **Disk Space**: ~500MB for dependencies
+- **Internet**: Required for API calls
+
+### Step-by-Step Installation
+
+#### Step 1: Download Project
+
+```bash
+# If using git
+git clone <repository-url>
+cd "Meal and Grocery System-CrewAI"
+
+# Or manually download and extract ZIP file
+```
+
+#### Step 2: Create Virtual Environment
+
+**Windows (PowerShell):**
+```powershell
+python -m venv venv
+.\venv\Scripts\Activate.ps1
+```
+
+**Windows (CMD):**
+```cmd
+python -m venv venv
+venv\Scripts\activate.bat
+```
+
+**macOS/Linux:**
+```bash
+python3 -m venv venv
+source venv/bin/activate
+```
+
+You should see `(venv)` prefix in your terminal.
+
+#### Step 3: Upgrade pip
+
+```bash
+python -m pip install --upgrade pip
+```
+
+#### Step 4: Install Dependencies
+
+```bash
+pip install -r requirements.txt
+```
+
+This installs ~50 packages including:
+- CrewAI, LangChain, Google Gemini
+- Streamlit for web interface
+- Pydantic for data validation
+- And supporting libraries
+
+**Expected output:**
+```
+Successfully installed crewai-0.141.0 langchain-0.3.20 streamlit-1.52.2 ... (50+ packages)
+```
+
+#### Step 5: Verify Installation
+
+```bash
+python -c "import crewai; import streamlit; import google.genai; print('✓ All packages installed!')"
+```
+
+---
+
+## 🔐 Configuration
+
+### Step 1: Get API Keys
+
+#### Google Gemini API Key (Required)
+1. Visit: https://ai.google.dev/
+2. Click **"Get API Key"**
+3. Create new Google Cloud project or select existing
+4. Copy your API key (looks like: `AIzaSyD...`)
+
+#### Serper API Key (Optional, for enhanced search)
+1. Visit: https://serper.dev/
+2. Sign up for free tier
+3. Copy API key from dashboard
+
+### Step 2: Create .env File
+
+```bash
+# Copy the example file
+cp .env.example .env
+
+# On Windows, if cp doesn't work:
+copy .env.example .env
+```
+
+### Step 3: Configure .env File
+
+Open `.env` in text editor and add:
+
+```env
+# Google Gemini API Key (REQUIRED)
+GEMINI_API_KEY=AIzaSyD...your_actual_key...
+
+# Serper API Key (Optional)
+SERPER_API_KEY=your_serper_key_here
+
+# Application settings (Optional)
 DEBUG=false
+LOG_LEVEL=INFO
 ```
 
-**Important:** The `.env` file is in `.gitignore` - it will never be committed.
+### Step 4: Verify Configuration
 
-### Without .env
+The app automatically loads `.env` when started. You'll see:
+```
+✓ Loaded environment from .env
+✓ GEMINI_API_KEY loaded from environment or .env file.
+   Key: AIzaSyD...4fEcQ
+```
 
-Set environment variables directly:
+---
 
+## 🚀 Usage
+
+### Option 1: Streamlit Web Interface ⭐ (Recommended)
+
+**Start the app:**
 ```bash
-export GEMINI_API_KEY="your_key"
-python main.py
+streamlit run streamlit_app.py
 ```
 
-## Project Structure
+**Access in browser:**
+- Local: http://localhost:8501
+- Network: http://<your-ip>:8501
 
-```
-├── main.py                     # Primary entry point (NEW)
-├── crewai_multi_agent.py       # Multi-agent coordinator
-├── leftover.py                 # YAML-based leftover manager
-├── config/
-│   ├── agents.yaml             # Agent configurations
-│   └── tasks.yaml              # Task configurations
-├── meal_planner.py             # DEPRECATED (see main.py)
-├── requirements.txt            # Python dependencies
-├── README.md                   # This file
-└── .gitignore                  # Git ignore patterns
-```
+**How to use:**
 
-## Architecture
+1. **📝 Configure preferences** (Left sidebar):
+   - Meal name: "Chicken Stir Fry" (example)
+   - Servings: 1-20 people
+   - Budget: $5-$500
+   - Dietary restrictions: Multi-select options
+   - Cooking skill: Beginner/Intermediate/Advanced
 
-```
-┌─────────────────┐
-│  main.py        │ (Entry point)
-└────────┬────────┘
-         │
-         ▼
-┌──────────────────────────────────┐
-│  Coordinator (CrewAI)            │
-├──────────────────────────────────┤
-│  1. Meal Planner (web search)    │
-│  2. Shopping Organizer           │
-│  3. Budget Advisor               │
-│  4. LeftoversCrew (YAML-based)   │
-│  5. Report Compiler              │
-└──────────────────────────────────┘
-         │
-         ▼
-  Google Gemini API
-  (or local fallback)
-```
+2. **🚀 Click "Generate Meal & Shopping Plan"**
+   - Shows progress spinners
+   - Processes through all 5 agents
 
-## Module Details
+3. **📊 View results** in 5 tabs:
+   - 🍽️ Meal Plan - Recipe details
+   - 🛒 Shopping List - Organized by section
+   - 💡 Budget Analysis - Cost breakdown & tips
+   - 🔄 Leftovers - Bonus recipes
+   - 📋 Summary - Complete guide
 
-### main.py
-Primary entry point that orchestrates all agents and displays results.
+4. **📥 Download results:**
+   - 📄 JSON - Structured data format
+   - 📝 Markdown - Readable document
 
-### crewai_multi_agent.py
-- `Coordinator` class: Manages sequential agent workflow
-- `GeminiWrapper`: Handles Google Gemini API calls
-- Pydantic models for structured data
-- Local agent stubs for fallback mode
+5. **🔄 Clear** - Reset and start over
 
-### leftover.py
-YAML-based CrewAI module for food waste reduction using `@CrewBase` decorator.
+### Option 2: Command-Line Interface
 
-## Usage Examples
-
-### Basic Run (Default)
+**Run:**
 ```bash
 python main.py
 ```
 
-### With Custom Inputs
-Edit `main.py` and modify the `sample_inputs` dictionary:
+**Output:**
+- Displays results in terminal
+- Saves to `workflow_results.json`
+
+**Custom inputs:**
+
+Edit `main.py` line ~110:
 
 ```python
 sample_inputs = {
-    "meal_name": "Pasta Primavera",
-    "servings": 2,
-    "budget": "$15",
-    "dietary_restrictions": ["vegetarian"],
-    "cooking_skill": "intermediate"
+    "meal_name": "Pasta Primavera",  # Change meal
+    "servings": 2,                   # Change servings
+    "budget": 15,                    # Change budget
+    "restrictions": "vegetarian",    # Change restrictions
+    "skill_level": "intermediate"    # Change skill
 }
 ```
 
-### Programmatic Usage
+Then run: `python main.py`
+
+### Option 3: Python API
+
+**Use in your code:**
+
 ```python
 from crewai_multi_agent import Coordinator, build_llm_callable_from_gemini
 
+# Initialize
 llm_call = build_llm_callable_from_gemini()
-coordinator = Coordinator(llm_call, use_leftovers_crew=True)
+coordinator = Coordinator(llm_call=llm_call)
 
-results = coordinator.run_sequential({
-    "meal_name": "Chicken Stir Fry",
+# Prepare inputs
+inputs = {
+    "meal_name": "Tacos",
     "servings": 4,
-    "budget": "$25",
-    "dietary_restrictions": ["no nuts"],
-    "cooking_skill": "beginner"
-})
+    "budget": 20,
+    "restrictions": "none",
+    "skill_level": "beginner"
+}
 
+# Run workflow
+results = coordinator.run_sequential(inputs)
+
+# Access results
+print(results['meal_planner'])
+print(results['shopping_organizer'])
+print(results['budget_advisor'])
+print(results['leftovers'])
 print(results['summary'])
 ```
 
-## API Key Management
+---
 
-### Using .env File (Recommended)
+## 🔑 API Keys & Quotas
 
-1. **Create `.env` from the example:**
-   ```bash
-   cp .env.example .env
-   ```
+### Google Gemini API
 
-2. **Edit `.env` and add your credentials:**
-   ```
-   GEMINI_API_KEY=sk_...your_key...
-   ```
+**Free Tier Limits:**
+- 15 requests per minute
+- 500,000 requests per day
+- Per-model quotas apply
 
-3. **Run the application:**
-   ```bash
-   python main.py
-   ```
+**Monitor usage:** https://ai.google.dev/usage
 
-The `.env` file is automatically loaded by both `main.py` and `crewai_multi_agent.py`.
+**Upgrade options:**
+- Free tier: Great for testing
+- Paid tiers: More requests & better models
+- Enterprise: Custom limits
 
-### Using Environment Variables
+**Models available:**
+- `gemini-1.5-flash` (default) - Fast, efficient, good for most tasks
+- `gemini-2.0-flash` - Latest, more capable, slightly slower
 
-```bash
-export GEMINI_API_KEY="your_key"
-python main.py
+### Serper API (Optional)
+
+Used for enhanced web search in recipe research.
+
+**Limits:**
+- Free tier: 100 searches/month
+- Paid tiers: More searches
+
+---
+
+## 🐛 Troubleshooting
+
+### Common Issues
+
+#### 1. "GEMINI_API_KEY not set" Error
+
+```
+Error: GEMINI_API_KEY not set in environment and not provided
 ```
 
-### Security Best Practices
+**Solutions:**
+1. Verify `.env` file exists in project root
+2. Check key format: `GEMINI_API_KEY=AIzaSyD...`
+3. Save file (no trailing spaces)
+4. Restart app
+5. Verify: `echo $GEMINI_API_KEY` (Unix) or `echo %GEMINI_API_KEY%` (Windows)
 
-- ✅ Use `.env` files for local development (never commit)
-- ✅ Use environment variables in CI/CD pipelines
-- ✅ Use secrets management services in production
-- ❌ Never hardcode API keys in source files
-- ❌ Never commit `.env` to version control (already in `.gitignore`)
-- ❌ Never share credentials in pull requests or issues
+#### 2. "429 RESOURCE_EXHAUSTED" Error
 
-## Fallback Mode
+```
+Error: You exceeded your current quota, please check your plan and billing details
+```
 
-If you don't have a Gemini API key or dependencies installed, the system runs in **fallback mode** using local agent stubs. This allows testing without real API calls.
+**Solutions:**
+- Free tier has rate limits (15 req/min)
+- Wait 5 seconds and retry
+- Upgrade plan at https://ai.google.dev/
+- Use smaller prompts
+- Batch requests together
 
-## Dependencies
+#### 3. "ModuleNotFoundError" - Streamlit/CrewAI Missing
 
-- `crewai==0.141.0` - Multi-agent orchestration
-- `langchain==0.3.20` - LLM chain management
-- `google-generativeai>=0.3.0` - Google Gemini API
-- `pydantic>=1.10` - Data validation
-- `ruamel.yaml>=0.17.0` - YAML parsing
+```
+ModuleNotFoundError: No module named 'streamlit'
+```
+
+**Solution:**
+```bash
+# Ensure venv is activated
+# Windows: .\venv\Scripts\Activate.ps1
+# Unix: source venv/bin/activate
+
+# Reinstall dependencies
+pip install -r requirements.txt
+```
+
+#### 4. "LeftoversCrew failed: Missing template variable"
+
+```
+Warning: LeftoversCrew failed: Missing required template variable 'servings'
+```
+
+**Solution:**
+- This is handled gracefully
+- System continues without leftovers suggestions
+- Verify `config/tasks.yaml` format
+- Check all required variables in input dictionary
+
+#### 5. Port 8501 Already in Use
+
+```
+Error: Address already in use
+```
+
+**Solution:**
+```bash
+# Kill existing process (Windows PowerShell)
+Get-Process -Id (Get-NetTCPConnection -LocalPort 8501).OwningProcess | Stop-Process -Force
+
+# Or use different port
+streamlit run streamlit_app.py --server.port 8502
+```
+
+#### 6. Virtual Environment Not Activating
+
+```
+(venv) prompt not appearing
+```
+
+**Solution - Windows PowerShell:**
+```powershell
+# Enable script execution
+Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
+
+# Then activate
+.\venv\Scripts\Activate.ps1
+```
+
+**Solution - Others:**
+```bash
+source venv/bin/activate  # macOS/Linux
+```
+
+#### 7. "Connection Error" or "Network Timeout"
+
+```
+Error: Connection refused or timeout
+```
+
+**Solutions:**
+- Check internet connection
+- Check firewall settings
+- Try with VPN disabled
+- Check API status: https://status.cloud.google.com/
+
+### Getting Help
+
+1. **Check error logs** - Streamlit shows detailed messages
+2. **Verify API key** - Test in Python:
+   ```python
+   import os
+   print(os.environ.get('GEMINI_API_KEY'))
+   ```
+3. **Test dependencies** - `pip list | grep crewai`
+4. **Check internet** - `ping google.com`
+
+---
+
+## 📦 Dependencies
+
+### Core AI/ML Stack
+```
+crewai==0.141.0              Multi-agent orchestration framework
+langchain==0.3.20            LLM chain management
+langchain-community==0.3.19  Community integrations
+google-genai>=0.1.0          Google Gemini new API
+google-generativeai>=0.3.0   Gemini API fallback
+pydantic>=1.10               Data validation with types
+```
+
+### Web & Search
+```
+duckduckgo-search==7.5.2     Fallback web search
+requests>=2.28               HTTP requests library
+```
+
+### UI & Configuration
+```
+streamlit>=1.28.0            Interactive web interface
+python-dotenv>=1.0.0         Environment variable loading
+pyyaml>=6.0                  YAML configuration parsing
+ruamel.yaml>=0.17.0          Advanced YAML support
+```
+
+### Transitive Dependencies
+~40 additional packages for async, utilities, and AI support
+
+See [requirements.txt](requirements.txt) for complete list.
+
+---
+
+## 🏢 Project Components
+
+### crewai_multi_agent.py
+
+**Key Classes:**
+- `GeminiWrapper` - Wraps Google Gemini API with fallback
+- `LocalAgent` - Fallback agent when CrewAI unavailable
+- `Coordinator` - Orchestrates 5-agent sequential workflow
+
+**Pydantic Models (Type-Safe Data):**
+- `GroceryItem` - Single grocery item with quantity & price
+- `MealPlan` - Meal with ingredients & difficulty
+- `ShoppingCategory` - Group of items by store section
+- `GroceryShoppingPlan` - Complete shopping plan
+
+**Helper Functions:**
+- `build_llm_callable_from_gemini()` - Creates LLM callable
+- `build_agent_stubs()` - Creates local agent fallbacks
+- `truncate_for_prompt()` - Limits prompt size
+
+### streamlit_app.py
+
+**Features:**
+- Interactive sidebar with meal preferences
+- Real-time result display with 5 tabs
+- JSON/Markdown export buttons
+- Status indicators and progress spinners
+- Session state management
+- Error handling with helpful tips
+
+### config/agents.yaml
+
+```yaml
+leftover_manager:
+  role: "Leftover Manager"
+  goal: "Identify uses for leftover ingredients"
+  backstory: "Expert at reducing food waste..."
+  tools: []
+```
+
+### config/tasks.yaml
+
+```yaml
+leftover_task:
+  description: "Analyze meal '{meal_name}' for {servings} people..."
+  expected_output: "List of bonus recipes using leftovers..."
+  agent: leftover_manager
+```
+
+---
+
+## 🚀 Performance Tips
+
+### Optimize for Speed
+1. Use `gemini-1.5-flash` (default)
+2. Keep inputs concise
+3. Set `DEBUG=false` in `.env`
+4. Streamlit caches automatically
+
+### Optimize for Quality
+1. Provide detailed dietary restrictions
+2. Match cooking skill level to recipes
+3. Use `gemini-2.0-flash` for complex meals
+
+### Cost Optimization
+- Free tier: ~1.5M tokens/month
+- Monitor at: https://ai.google.dev/usage
+- Batch multiple meals together
+- Cache results for similar requests
+
+---
+
+## 📝 Customization
+
+### Change Default Meal
+
+Edit `streamlit_app.py` line ~45:
+```python
+meal_name = st.text_input(
+    "🍲 Meal Name",
+    value="Your Default Meal",  # Change here
+)
+```
+
+### Add Dietary Restrictions
+
+Edit `streamlit_app.py` line ~64:
+```python
+options=["None", "Vegetarian", "Vegan", "Gluten-free", 
+         "Dairy-free", "Nut allergies", "Keto", "Paleo"],  # Add here
+```
+
+### Customize Agent Behavior
+
+Edit `config/agents.yaml`:
+```yaml
+leftover_manager:
+  role: "Food Waste Reduction Expert"  # Customize
+  goal: "Minimize waste and maximize ingredient usage"
+  backstory: "An eco-conscious chef specialized in..."
+```
+
+---
+
+## 📄 License
+
+MIT License - See [LICENSE](LICENSE) file
+
+---
+
+## 🙏 Credits
+
+- **CrewAI** - Multi-agent framework: https://crewai.io
+- **LangChain** - LLM orchestration: https://langchain.com
+- **Google Gemini** - Large language model: https://ai.google.dev
+- **Streamlit** - Web UI framework: https://streamlit.io
+- **DuckDuckGo** - Search integration
+
+---
+
+## 📞 Support Resources
+
+- 📖 **CrewAI Docs**: https://crewai.io/docs
+- 📚 **LangChain Docs**: https://python.langchain.com/docs
+- 🔍 **Google Gemini Guide**: https://ai.google.dev/tutorials
+- 💬 **Streamlit Docs**: https://docs.streamlit.io
+
+---
+
+**Made with ❤️ for better meal planning**
+
+*Last Updated: December 27, 2025*
+
